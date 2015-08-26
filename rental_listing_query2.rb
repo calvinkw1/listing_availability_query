@@ -24,6 +24,21 @@ tahoe_cabin = {
 # Write a function that accepts the above object as an argument, and returns an array of all available contiguous date ranges,
 # listing only the start and end dates of each range (of the format [[start_date, end_date], [start_date, end_date]]).
 
+class Available_range
+  attr_accessor :start_date
+  attr_accessor :end_date
+  attr_accessor :start_date_index
+  attr_accessor :end_date_index
+
+   def initialize(start_date, end_date, start_date_index, end_date_index)
+      @start_date = start_date
+      @end_date = end_date
+      @start_date_index = start_date_index
+      @end_date_index = end_date_index
+   end
+
+end
+
 def available_ranges(property)
   # get start date
   date_tracker = Date.parse(property[:start_date])
@@ -31,31 +46,61 @@ def available_ranges(property)
   availability = property[:availability]
   # create empty array of avails
   available_dates = []
-  # create reusable hash with keys set to nil vals to start
-  available_range = {
-    start_date: nil,
-    end_date: nil,
-    start_date_index: nil,
-    end_date_index: nil
-  }
+
   # flag for whether we've seen a Y
-  count = 0
   first_yes_in_set = true
+  # count of Ys
+  count = 0
+
+  start_date = nil
+  start_date_index = nil
+  end_date = nil
+  end_date_index = nil
+  index = 0
+  letter_count = 0
   # iterate through availability string
   availability.each_char do |avail|
-    if avail == "Y" && first_yes_in_set
-      available_range[:start_date_index] = availability.index(avail)
-      count = 1
-      first_yes_in_set = false
-      binding.pry
-    elsif avail == "Y" && !first_yes_in_set
+    # if Y and first yes in set, get index of first Y and assign to hash
+    # increase count by 1
+    # set first yes to false
+    if avail == "Y" && first_yes_in_set && count == 0
+      start_date_index = index
+      start_date = date_tracker + start_date_index
       count += 1
-      binding.pry
-    elsif avail == "N" && count > 0
-      available_range[:end_date_index] = availability.index(avail) - 1
+      first_yes_in_set = false
+    # if Y and count greater than or equal to 1, increment count by 1
+    elsif avail == "Y" && count >= 1 && !availability[-1,1]
+      count += 1
+    # if N and count greater than 1, set end date index to start date index plus count
+    # reset first yes flag and count, as set of Ys is complete
+    elsif avail == "N" && count > 1
+      end_date_index = start_date_index + count
+      end_date = date_tracker + end_date_index
+      range = Available_range.new(start_date.to_s, end_date.to_s, start_date_index, end_date_index)
+      available_dates << range
+      first_yes_in_set = true
+      count = 0
+    elsif letter_count == availability.length - 1
+      end_date_index = start_date_index + count
+      end_date = date_tracker + end_date_index
+      range = Available_range.new(start_date.to_s, end_date.to_s, start_date_index, end_date_index)
+      available_dates << range
       binding.pry
     end
+    index += 1
+    letter_count +=1
   end
+  counter = 0
+  listing_dates = []
+  available_dates.each do |dates|
+    date = []
+    date << dates.start_date
+    date << dates.end_date
+    listing_dates << date
+    counter += 1
+  end
+  puts listing_dates.length
+  print listing_dates
 end
 
 available_ranges tahoe_cabin
