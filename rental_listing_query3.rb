@@ -61,8 +61,51 @@ def available_ranges(property)
   # binding.pry
   print rental_avail_range
   puts "Array length: #{rental_avail_range.length}"
-  puts "Counter: #{counter}"
-  puts "Y Counter: #{y_counter}"
+  # puts "Counter: #{counter}"
+  # puts "Y Counter: #{y_counter}"
 end
 
-available_ranges tahoe_cabin
+# available_ranges tahoe_cabin
+
+# Write a function that, given a start date and end date, returns the total cost of booking the property for that date range, 
+# or zero if the property is unavailable for any date in the range.
+
+def cost_of_booking(property, start_date, end_date)
+  property_start_date = Date.parse(property[:start_date])
+  availability = property[:availability].split('')
+  minstay = property[:minstay].split(',')
+  price = property[:price].split(',')
+  total_price = []
+
+  start_date_rational = Date.parse(start_date) - property_start_date
+  start_array_index = start_date_rational.to_i
+  end_date_rational = Date.parse(end_date) - property_start_date
+  end_array_index = end_date_rational.to_i
+  total_stay = *(start_array_index...end_array_index)
+
+  # request = {
+  #   availability: property[:availability].split(''),
+  #   minstay: property[:minstay].split(','),
+  #   price: property[:price].split(',')
+  # }
+
+  if total_stay.length < minstay[total_stay[0]].to_i
+    puts "Sorry! The minimum stay for this starting date is #{minstay[total_stay[0]]} nights!"
+    return 0
+  else
+    total_stay.each do |i|
+      if availability[i] == "N"
+        puts "Sorry! One or more of the dates in your range have already been booked!"
+        return 0
+      else
+        total_price << price[i].to_i
+        puts price[i].to_i
+      end
+    end
+    puts "Days: #{total_stay.length}"
+    puts "Minimum stay: #{minstay[total_stay[0]]}"
+    puts "Total Cost: #{total_price.reduce(:+)}"
+  end
+end
+
+cost_of_booking(tahoe_cabin, "2015-01-06", "2015-01-07")
