@@ -21,68 +21,112 @@ tahoe_cabin = {
 
 # Please provide solutions for the following:
 
+# ================================
 # Write a function that accepts the above object as an argument, and returns an array of all available contiguous date ranges,
 # listing only the start and end dates of each range (of the format [[start_date, end_date], [start_date, end_date]]).
-
+# ================================
 def available_ranges(property)
-  # get start date
+
+  # convert property start date (string) into date
   date_tracker = Date.parse(property[:start_date])
-  # get availability
-  availability = property[:availability]
-  # create empty array of avails
-  available_dates = []
-  # create reusable hash with keys set to nil vals to start
-  available_range = {
-    start_date: nil,
-    end_date: nil,
-    start_date_index: nil,
-    end_date_index: nil
-  }
-  # flag for whether we've seen a Y
-  hit_yes = false
-  # iterate through availability string
-  availability.each_char do |avail|
-    # if Y, set start date in available_range obj
-    if avail == "Y"
-      # check flag, if false, set start date and index and continue
-      if hit_yes == false
-        hit_yes = true
-        available_range[:start_date] = date_tracker
-        yes_index = availability.index(avail)
-        available_range[:start_date_index] = yes_index
-        binding.pry
-        date_tracker += 1
-        # binding.pry
-      else # if hit_yes is true,
-        # only increment date
-        date_tracker += 1
-      end
-    # if N, do
-    else 
-      # if hit_yes true, change to false and set current date as end date in avail_range
-      if hit_yes == true
-        hit_yes = false
-        available_range[:end_date] = date_tracker
-        available_range[:end_date_index] = availability.index(avail)
-        available_dates << available_range
-        binding.pry
-        date_tracker += 1
-      # if hit_yes false, only increment date
-      else
-        date_tracker += 1
-      end
+  # get all Y and N into an array
+  availability = property[:availability].split('')
+
+  counter = 0
+  y_counter = 0
+  start_end_dates = []
+  rental_avail_range = []
+  available_start_date = nil
+  available_end_date = nil
+
+  # iterate through availability array and check if each element meets any criteria
+  availability.each do |avail|
+    # if N and not in a set of Ys, or Y but have reached end of array
+    # set the end date by adding the Y counter to the start date of the first Y in set
+    # push end date into start_end_date array, then push whole array into the rental_avail_range array
+    # reset start_end_dates array and y_counter, as we've ended the current set of Ys
+    # increase counter by 1
+    if avail == "N" && y_counter != 0 || avail == "Y" && counter == availability.length - 1
+      available_end_date = available_start_date + y_counter
+      start_end_dates << available_end_date.to_s
+      rental_avail_range << start_end_dates
+      start_end_dates = []
+      y_counter = 0
+      counter += 1
+    # if first Y, increment y_counter to signal start of Y set
+    # add counter to date_tracker to get starting date of Y set
+    # increment counter by 1
+    elsif avail == "Y" && y_counter == 0
+      y_counter += 1
+      available_start_date = date_tracker + counter
+      start_end_dates << available_start_date.to_s
+      counter += 1
+    # if Y and start date already exists in start_end_dates array, means already in set of Ys
+    # increment y_counter and counter to move on
+    elsif avail == "Y" && start_end_dates[0]
+      y_counter += 1
+      counter += 1
+    # if N, increment counter by 1 and move on
+    elsif avail == "N"
+      counter += 1
     end
   end
-  puts available_dates
+  print rental_avail_range
+  puts "Array length: #{rental_avail_range.length}"
 end
 
 available_ranges tahoe_cabin
 
+# ================================
 # Write a function that, given a start date and end date, returns the total cost of booking the property for that date range, 
 # or zero if the property is unavailable for any date in the range.
-
+# ================================
 def cost_of_booking(property, start_date, end_date)
-  #
+  
+  # splitting everything into arrays for ease of access
+  availability = property[:availability].split('')
+  minstay = property[:minstay].split(',')
+  price = property[:price].split(',')
+
+  # request = {
+  #   availability: property[:availability].split(''),
+  #   minstay: property[:minstay].split(','),
+  #   price: property[:price].split(',')
+  # }
+
+  total_price = []
+
+  # use property's start date to calculate index of start date
+  # get indexes of start and end dates, then creating a range using those indexes to form an array
+  property_start_date = Date.parse(property[:start_date])
+  start_date_rational = Date.parse(start_date) - property_start_date
+  start_array_index = start_date_rational.to_i
+  end_date_rational = Date.parse(end_date) - property_start_date
+  end_array_index = end_date_rational.to_i
+  total_stay = *(start_array_index...end_array_index)
+
+  # check to see if the total number of days is less than the minimum stay for the starting date
+  # if total number of days is greater than min stay amount, proceed to iterate through the total stay array
+  # check first if any of the requested dates have "N" in them
+  # if all "Y", get the price of each day's stay and shovel into total price array
+  # use reduce to sum up all elements in total price array and return that total amount
+  if total_stay.length < minstay[total_stay[0]].to_i
+    puts "Sorry! The minimum stay for this starting date is #{minstay[total_stay[0]]} nights!"
+    return 0
+  else
+    total_stay.each do |i|
+      if availability[i] == "N"
+        puts "Sorry! One or more of the dates in your range have already been booked!"
+        return 0
+      else
+        total_price << price[i].to_i
+        puts price[i].to_i
+      end
+    end
+    puts "Days: #{total_stay.length}"
+    puts "Minimum stay: #{minstay[total_stay[0]]}"
+    puts "Total Cost: #{total_price.reduce(:+)}"
+  end
 end
 
-# cost_of_booking tahoe_cabin
+cost_of_booking(tahoe_cabin, "2015-01-06", "2015-01-07")
